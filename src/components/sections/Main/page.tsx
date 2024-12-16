@@ -2,6 +2,7 @@
 import React from "react";
 import { YoutubeTranscript } from "youtube-transcript";
 import axios from "axios";
+import { Redirect } from "next";
 
 import { Button } from "../../../components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,20 +17,27 @@ import {
 } from "@/components/ui/card";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { redirect } from "next/navigation";
 
 const genAI = new GoogleGenerativeAI(
   process.env.NEXT_PUBLIC_GEMINI_KEY as string
 );
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+export let summary: string = "";
+
 export default function Main() {
   interface wikiSearchRes {
     titleForURL: string;
@@ -58,7 +66,7 @@ export default function Main() {
   const [YTSearchResults, setYTSearchResults] = useState<YTMTrack[]>([]);
 
   const [researchInput, setResearchInput] = useState<string>("");
-  const [researchInputTITLES, setResearchInputTITLES] = useState<string>("");
+  const [researchInputTITLES, setResearchInputTITLES] = useState<string[]>([]);
   const [generatingSummary, setGeneratingSummary] = useState<boolean>(true);
 
   const callAPI = async () => {
@@ -194,7 +202,7 @@ export default function Main() {
   };
   const addResearchInputTITLES = (data: string) => {
     console.log("research input here ");
-    setResearchInputTITLES((prevInput) => prevInput + data + "\n");
+    setResearchInputTITLES((prevInput) => [...prevInput, data]);
     console.log(researchInputTITLES);
   };
 
@@ -209,22 +217,46 @@ export default function Main() {
     console.log(researchInput);
   }, [researchInput]);
 
-  // function ResearchInput() {
-  //   return (
-  //     <>
-  //       <Sheet>
-  //         <SheetTrigger>View Input</SheetTrigger>
-  //         <SheetContent>{researchInputTITLES.map(())}</SheetContent>
-  //       </Sheet>
-  //     </>
-  //   );
-  // }
+  function ResearchInput() {
+    return (
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline">Open</Button>
+        </SheetTrigger>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Research Input</SheetTitle>
+            <SheetDescription>
+              Make changes to your profile here. Click save when you're done.
+            </SheetDescription>
+            {researchInputTITLES.map((title, index) => (
+              <div key={index}>
+                <CardHeader>{title}</CardHeader>
+                <Separator />
+              </div>
+            ))}
+          </SheetHeader>
+
+          <SheetFooter>
+            <SheetClose asChild>
+              <Button type="submit" onClick={TheBigSummarize}>
+                Summarize
+              </Button>
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   const TheBigSummarize = async () => {
     console.log(researchInput);
+
     const result = await model.generateContent(researchInput);
     setGeneratingSummary(false);
     console.log(result.response.text());
+    summary = result.response.text();
+    redirect("/Summary");
   };
 
   return (
@@ -242,6 +274,7 @@ export default function Main() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <Button type="submit">Here</Button>
+          <ResearchInput></ResearchInput>
         </div>
       </form>
 
@@ -295,7 +328,6 @@ export default function Main() {
         </div>
       </div>
 
-      <Button onClick={TheBigSummarize}>SUMMARIZE</Button>
     </>
   );
 }
