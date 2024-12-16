@@ -32,6 +32,7 @@ const genAI = new GoogleGenerativeAI(
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 export default function Main() {
   interface wikiSearchRes {
+    titleForURL: string;
     title: string;
     content: string;
     url: string;
@@ -58,6 +59,7 @@ export default function Main() {
 
   const [researchInput, setResearchInput] = useState<string>("");
   const [researchInputTITLES, setResearchInputTITLES] = useState<string>("");
+  const [generatingSummary, setGeneratingSummary] = useState<boolean>(true);
 
   const callAPI = async () => {
     const params: { [key: string]: string } = {
@@ -70,7 +72,6 @@ export default function Main() {
       format: "json",
       origin: "*",
     };
-
 
     let url = "https://simple.wikipedia.org/w/api.php";
     url += "?" + new URLSearchParams(params).toString();
@@ -100,15 +101,18 @@ export default function Main() {
           method: "GET",
         });
         const contentData = await contentResponse.json();
-        console.log(contentData)
+        console.log(contentData);
         const pageId = Object.keys(contentData.query.pages)[0];
         const pageContent = contentData.query.pages[pageId].extract;
-        const pageURL = "https://en.wikipedia.org/wiki/" + title;
+        let titleForURL = title;
+        titleForURL = titleForURL.replace(/\s+/g, "_");
+        const pageURL = "https://en.wikipedia.org/wiki/" + titleForURL;
         // console.log(contentURLS)
 
         setWikiSearchResults((prevResults) => [
           ...prevResults,
           {
+            titleForURL: titleForURL,
             title,
             content: pageContent,
             url: pageURL,
@@ -217,9 +221,10 @@ export default function Main() {
   // }
 
   const TheBigSummarize = async () => {
-    console.log(researchInput)
-    // const result = await model.generateContent(researchInput);
-    // console.log(result.response.text());
+    console.log(researchInput);
+    const result = await model.generateContent(researchInput);
+    setGeneratingSummary(false);
+    console.log(result.response.text());
   };
 
   return (
@@ -255,7 +260,7 @@ export default function Main() {
               <CardFooter>
                 <Button
                   onClick={() => {
-                    addResearchInputTITLES(item.title);
+                    addResearchInputTITLES(item.titleForURL);
                     addResearchInput(item.url as string);
                   }}
                 >
