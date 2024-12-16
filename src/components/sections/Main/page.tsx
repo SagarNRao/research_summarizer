@@ -2,7 +2,6 @@
 import React from "react";
 import { YoutubeTranscript } from "youtube-transcript";
 import axios from "axios";
-// import json
 
 import { Button } from "../../../components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +14,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
 
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const genAI = new GoogleGenerativeAI(
+  process.env.NEXT_PUBLIC_GEMINI_KEY as string
+);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 export default function Main() {
   interface wikiSearchRes {
     title: string;
     content: string;
+    url: string;
   }
 
   interface YTMTrack {
@@ -42,16 +57,20 @@ export default function Main() {
   const [YTSearchResults, setYTSearchResults] = useState<YTMTrack[]>([]);
 
   const [researchInput, setResearchInput] = useState<string>("");
+  const [researchInputTITLES, setResearchInputTITLES] = useState<string>("");
 
   const callAPI = async () => {
     const params: { [key: string]: string } = {
       action: "query",
+      prop: "extracts|info",
+      inprop: "url",
       list: "search",
       srsearch: searchQuery,
-      srlimit: "5",
+      srlimit: "7",
       format: "json",
       origin: "*",
     };
+
 
     let url = "https://simple.wikipedia.org/w/api.php";
     url += "?" + new URLSearchParams(params).toString();
@@ -81,12 +100,19 @@ export default function Main() {
           method: "GET",
         });
         const contentData = await contentResponse.json();
+        console.log(contentData)
         const pageId = Object.keys(contentData.query.pages)[0];
         const pageContent = contentData.query.pages[pageId].extract;
+        const pageURL = "https://en.wikipedia.org/wiki/" + title;
+        // console.log(contentURLS)
 
         setWikiSearchResults((prevResults) => [
           ...prevResults,
-          { title, content: contentData.query.pages[pageId].extract },
+          {
+            title,
+            content: pageContent,
+            url: pageURL,
+          },
         ]);
 
         // console.log(`Content for ${title}:`, pageContent); // Log the page content for each title
@@ -162,6 +188,11 @@ export default function Main() {
     setResearchInput((prevInput) => prevInput + data + "\n");
     console.log(researchInput);
   };
+  const addResearchInputTITLES = (data: string) => {
+    console.log("research input here ");
+    setResearchInputTITLES((prevInput) => prevInput + data + "\n");
+    console.log(researchInputTITLES);
+  };
 
   const addYTResearchInput = (data: string) => {
     console.log("YT research input here");
@@ -173,6 +204,23 @@ export default function Main() {
   useEffect(() => {
     console.log(researchInput);
   }, [researchInput]);
+
+  // function ResearchInput() {
+  //   return (
+  //     <>
+  //       <Sheet>
+  //         <SheetTrigger>View Input</SheetTrigger>
+  //         <SheetContent>{researchInputTITLES.map(())}</SheetContent>
+  //       </Sheet>
+  //     </>
+  //   );
+  // }
+
+  const TheBigSummarize = async () => {
+    console.log(researchInput)
+    // const result = await model.generateContent(researchInput);
+    // console.log(result.response.text());
+  };
 
   return (
     <>
@@ -198,11 +246,17 @@ export default function Main() {
         <div>
           {wikiSearchResults.map((item: wikiSearchRes, index) => (
             <Card key={index}>
-              <CardHeader>{item.title}</CardHeader>
+              <CardHeader>
+                <>
+                  {item.title}
+                  <Badge variant="default">Wikipedia</Badge>
+                </>
+              </CardHeader>
               <CardFooter>
                 <Button
                   onClick={() => {
-                    addResearchInput(item.content);
+                    addResearchInputTITLES(item.title);
+                    addResearchInput(item.url as string);
                   }}
                 >
                   Add as input
@@ -211,14 +265,20 @@ export default function Main() {
             </Card>
           ))}
         </div>
-
+        <div className="p-5"></div>
         <div>
           {YTSearchResults.map((item: YTMTrack, index) => (
             <Card key={index}>
-              <CardHeader>{item.finalTitle}re</CardHeader>
+              <CardHeader>
+                <>
+                  {item.finalTitle}
+                  <Badge variant="youtube">YouTube</Badge>
+                </>
+              </CardHeader>
               <CardFooter>
                 <Button
                   onClick={() => {
+                    addResearchInputTITLES(item.finalTitle);
                     addYTResearchInput(item.finalID);
                   }}
                 >
@@ -229,6 +289,8 @@ export default function Main() {
           ))}
         </div>
       </div>
+
+      <Button onClick={TheBigSummarize}>SUMMARIZE</Button>
     </>
   );
 }

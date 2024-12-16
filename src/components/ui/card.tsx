@@ -13,7 +13,7 @@ const Card = React.forwardRef<
       className
     )}
     {...props}
-    style={{minWidth:"285px"}}
+    style={{minWidth:"400px", maxWidth:"400px"}}
   />
 ))
 Card.displayName = "Card"
