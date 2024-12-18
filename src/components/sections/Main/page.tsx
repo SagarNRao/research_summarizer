@@ -221,13 +221,13 @@ export default function Main() {
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline">Open</Button>
+          <Button variant="outline">View Input</Button>
         </SheetTrigger>
         <SheetContent>
           <SheetHeader>
             <SheetTitle>Research Input</SheetTitle>
             <SheetDescription>
-              Make changes to your profile here. Click save when you're done.
+              View your input before summarizing
             </SheetDescription>
             {researchInputTITLES.map((title, index) => (
               <div key={index}>
@@ -252,7 +252,7 @@ export default function Main() {
   const TheBigSummarize = async () => {
     console.log(researchInput);
 
-    const result = await model.generateContent(researchInput);
+    const result = await model.generateContent(researchInput + "\nsummarize the wikipedia pages and use the transcripts in the youtube videos(if any)");
     setGeneratingSummary(false);
     console.log(result.response.text());
     summary = result.response.text();
@@ -273,7 +273,7 @@ export default function Main() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <Button type="submit">Here</Button>
+          <Button type="submit">Search</Button>
           <ResearchInput></ResearchInput>
         </div>
       </form>
